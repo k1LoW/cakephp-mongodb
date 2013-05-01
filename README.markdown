@@ -1,8 +1,13 @@
 # mongoDB datasource for CakePHP
 
+[![Build Status](https://travis-ci.org/ichikaway/cakephp-mongodb.png?branch=cake2.2)](https://travis-ci.org/ichikaway/cakephp-mongodb)
+[![Coverage Status](https://coveralls.io/repos/ichikaway/cakephp-mongodb/badge.png?branch=cake2.2)](https://coveralls.io/r/ichikaway/cakephp-mongodb)
+
 ## Requirements
-PHP5, 
-pecl mongo (http://php.net/mongo)
+
+- PHP5
+- CakePHP >= 2.2.5
+- pecl mongo (http://php.net/mongo)
 
 ## Installation
 
@@ -10,28 +15,33 @@ this repository should be installed in the same way as any other plugin.
 
 To install the driver for use in a single application:
 
-	cd my/app/plugins
-	git clone git://github.com/ichikaway/cakephp-mongodb.git mongodb
+	cd my/app/Plugin
+	git clone git://github.com/ichikaway/cakephp-mongodb.git Mongodb
 
 To install the driver for use in any/multiple application(s)
 
 	# where ROOT is the name of the directory parent to the base index.php of CakePHP.
-	cd ROOT/plugins
-	git clone git://github.com/ichikaway/cakephp-mongodb.git mongodb
+	cd ROOT/Plugin
+	git clone git://github.com/ichikaway/cakephp-mongodb.git Mongodb
 	
 ## Sample Code
 
 To use this DB driver, install (obviously) and define a db source such as follows:
 
 	<?php
-	// app/config/database.php
-	class DATABASE_CONFIG {
+	//app/Config/bootstrap.php
+	CakePlugin::load('Mongodb');
 
+
+	// app/Config/database.php
+	class DATABASE_CONFIG {
 		public $default = array(
-			'driver' => 'mongodb.mongodbSource',
-			'database' => 'driver',
+			'datasource' => 'Mongodb.MongodbSource',
 			'host' => 'localhost',
+			'database' => 'blog',
 			'port' => 27017,
+			'prefix' => '',
+			'persistent' => 'true',
 			/* optional auth fields
 			'login' => 'mongo',	
 			'password' => 'awesomeness',
@@ -39,8 +49,16 @@ To use this DB driver, install (obviously) and define a db source such as follow
 			                      'options' => array('replicaSet' => 'myRepl')
 					     ),
 			*/
-		);  
+		);
 
+		// To make sure all tests are passing create the following entry in app/Config/database.php
+		public $test = array(
+			'datasource' => 'Mongodb.MongodbSource',
+			'database' => 'test_mongo',
+			'host' => 'localhost',
+			'port' => 27017,
+		); 
+	}
 
 More detail of replicaset in wiki:
 https://github.com/ichikaway/cakephp-mongodb/wiki/How-to-connect-to-replicaset-servers

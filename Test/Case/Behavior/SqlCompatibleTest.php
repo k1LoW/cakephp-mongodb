@@ -18,10 +18,10 @@
  * @license       http://www.opensource.org/licenses/mit-license.php The MIT License
  */
 
-/**
- * Import relevant classes for testing, rely on main test for loading clases
- */
-require_once(dirname(dirname(__FILE__)) . DS . 'datasources' . DS . 'mongodb_source.test.php');
+
+App::uses('Model', 'Model');
+App::uses('AppModel', 'Model');
+
 
 /**
  * SqlCompatiblePost class
@@ -30,15 +30,15 @@ require_once(dirname(dirname(__FILE__)) . DS . 'datasources' . DS . 'mongodb_sou
  * @package       mongodb
  * @subpackage    mongodb.tests.cases.behaviors
  */
-class SqlCompatiblePost extends Post {
+class SqlCompatiblePost extends AppModel {
 
 /**
  * useDbConfig property
  *
- * @var string 'mongo_test'
+ * @var string 'test_mongo'
  * @access public
  */
-	public $useDbConfig = 'mongo_test';
+	public $useDbConfig = 'test_mongo';
 
 /**
  * actsAs property
@@ -74,7 +74,7 @@ class SqlCompatibleTest extends CakeTestCase {
  * @access protected
  */
 	protected $_config = array(
-		'datasource' => 'mongodb',
+		'datasource' => 'Mongodb.MongodbSource',
 		'host' => 'localhost',
 		'login' => '',
 		'password' => '',
@@ -84,13 +84,7 @@ class SqlCompatibleTest extends CakeTestCase {
 		'persistent' => false,
 	);
 
-/**
- * Sets up the environment for each test method
- *
- * @return void
- * @access public
- */
-	public function startTest() {
+	public function setUp() {
 		$connections = ConnectionManager::enumConnectionObjects();
 
 		if (!empty($connections['test']['classname']) && $connections['test']['classname'] === 'mongodbSource') {
@@ -98,11 +92,21 @@ class SqlCompatibleTest extends CakeTestCase {
 			$this->_config = $config->test;
 		}
 
-		ConnectionManager::create('mongo_test', $this->_config);
-		$this->Mongo = new MongodbSource($this->_config);
+		if(!isset($connections['test_mongo'])) {
+			ConnectionManager::create('test_mongo', $this->_config);
+			$this->Mongo = new MongodbSource($this->_config);
+		}
 
-		$this->Post = ClassRegistry::init(array('class' => 'SqlCompatiblePost', 'alias' => 'Post', 'ds' => 'mongo_test'));
+		$this->Post = ClassRegistry::init(array('class' => 'SqlCompatiblePost', 'alias' => 'Post', 'ds' => 'test_mongo'), true);
+	}
 
+/**
+ * Sets up the environment for each test method
+ *
+ * @return void
+ * @access public
+ */
+	public function startTest($method) {
 		$this->_setupData();
 	}
 
@@ -112,9 +116,13 @@ class SqlCompatibleTest extends CakeTestCase {
  * @return void
  * @access public
  */
-	public function endTest() {
+	public function endTest($method) {
 		$this->Post->deleteAll(true);
+	}
+
+	public function tearDown() {
 		unset($this->Post);
+		ClassRegistry::flush();
 	}
 
 /**
@@ -132,7 +140,8 @@ class SqlCompatibleTest extends CakeTestCase {
 			'fields' => array('_id', 'title', 'number'),
 			'order' => array('number' => 'ASC')
 		));
-		$result = Set::extract($result, '/Post/title');
+
+		$result = Hash::extract($result, '{n}.Post.title');
 		$this->assertEqual($expected, $result);
 
 		$conditions = array(
@@ -149,7 +158,7 @@ class SqlCompatibleTest extends CakeTestCase {
 			'fields' => array('_id', 'title', 'number'),
 			'order' => array('number' => 'ASC')
 		));
-		$result = Set::extract($result, '/Post/title');
+		$result = Hash::extract($result, '{n}.Post.title');
 		$this->assertEqual($expected, $result);
 
 		$conditions = array(
@@ -174,7 +183,7 @@ class SqlCompatibleTest extends CakeTestCase {
 			'fields' => array('_id', 'title', 'number'),
 			'order' => array('number' => 'ASC')
 		));
-		$result = Set::extract($result, '/Post/title');
+		$result = Hash::extract($result, '{n}.Post.title');
 		$this->assertEqual($expected, $result);
 
 		$conditions = array(
@@ -201,7 +210,7 @@ class SqlCompatibleTest extends CakeTestCase {
 			'fields' => array('_id', 'title', 'number'),
 			'order' => array('number' => 'ASC')
 		));
-		$result = Set::extract($result, '/Post/title');
+		$result = Hash::extract($result, '{n}.Post.title');
 		$this->assertEqual($expected, $result);
 
 		$conditions = array(
@@ -228,7 +237,7 @@ class SqlCompatibleTest extends CakeTestCase {
 			'fields' => array('_id', 'title', 'number'),
 			'order' => array('number' => 'ASC')
 		));
-		$result = Set::extract($result, '/Post/title');
+		$result = Hash::extract($result, '{n}.Post.title');
 		$this->assertEqual($expected, $result);
 
 		$conditions = array(
@@ -263,7 +272,7 @@ class SqlCompatibleTest extends CakeTestCase {
 		$result = $this->Post->find('all', $params);
 
 		$expected = array('A11','A12');
-		$result = Set::extract($result, '/Post/_id');
+		$result = Hash::extract($result, '{n}.Post._id');
 		$this->assertEqual($expected, $result);
 		$this->assertEqual(2, count($result));
 
@@ -278,7 +287,7 @@ class SqlCompatibleTest extends CakeTestCase {
 		$params = array('conditions' => array('_id' => array('$nin' => array('A11', 'A12'))));
 		$result = $this->Post->find('all', $params);
 		//$expected = array('A13','A14');
-		$result = Set::extract($result, '/Post/_id');
+		$result = Hash::extract($result, '{n}.Post._id');
 		$this->assertTrue(in_array('A13', $result));
 		$this->assertFalse(in_array('A11', $result));
 		$this->assertFalse(in_array('A12', $result));
@@ -307,7 +316,7 @@ class SqlCompatibleTest extends CakeTestCase {
 			'fields' => array('_id', 'title'),
 			'order' => array('title DESC')
 		));
-		$result = Set::extract($result, '/Post/title');
+		$result = Hash::extract($result, '{n}.Post.title');
 		$this->assertEqual($expected, $result);
 
 		$order = array(array('title' => 'DESC'));
@@ -327,7 +336,7 @@ class SqlCompatibleTest extends CakeTestCase {
 			'fields' => array('_id', 'title'),
 			'order' => array('title ASC')
 		));
-		$result = Set::extract($result, '/Post/title');
+		$result = Hash::extract($result, '{n}.Post.title');
 		$this->assertEqual($expected, $result);
 
 		$order = array(array('title' => 'ASC'));
@@ -348,11 +357,40 @@ class SqlCompatibleTest extends CakeTestCase {
 			'fields' => array('_id', 'title'),
 			'order' => array('Post.title DESC')
 		));
-		$result = Set::extract($result, '/Post/title');
+		$result = Hash::extract($result, '{n}.Post.title');
 		$this->assertEqual($expected, $result);
 	}
 
+/**
+ * Convert MongoDate objects to strings
+ *
+ * @return void
+ * @access public
+ */
+	public function testConvertDates() {
+		$expected = '2011-Nov-22 00:00:00';
+		$data = array('title' => 'date', 'created_at' => new MongoDate(strtotime('2011-11-22 00:00:00')));
+		$this->Post->save($data);
+		$result = $this->Post->read();
+		$this->assertEqual($expected, $result['Post']['created_at']);
+	}
 
+/**
+ * Convert MongoDate objects to another format strings
+ *
+ * @return void
+ * @access public
+ */
+	public function testConvertDatesAnotherFormat() {
+		$this->Post->Behaviors->detach('SqlCompatible');
+		$this->Post->Behaviors->attach('Mongodb.SqlCompatible', array('dateFormat' => 'Y-m-d H:i:s'));
+
+		$expected = '2011-11-22 00:00:00';
+		$data = array('title' => 'date', 'created_at' => new MongoDate(strtotime('2011-11-22 00:00:00')));
+		$this->Post->save($data);
+		$result = $this->Post->read();
+		$this->assertEqual($expected, $result['Post']['created_at']);
+	}
 
 /**
  * setupData method
@@ -361,7 +399,9 @@ class SqlCompatibleTest extends CakeTestCase {
  * @access protected
  */
 	protected function _setupData() {
-		$this->Post->deleteAll(true);
+		$this->Post->deleteAll(true, false);
+		$this->Post->primaryKey = '_id';
+
 		for ($i = 1; $i <= 20; $i++) {
 			$data = array(
 				'title' => $i,
